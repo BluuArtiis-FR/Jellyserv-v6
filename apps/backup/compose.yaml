@@ -1,0 +1,54 @@
+name: jellyserv-backup
+
+services:
+  # ---------------------------------------------------------------------------
+  # KOPIA - Sauvegarde Chiffrée & Dédupliquée
+  # ---------------------------------------------------------------------------
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia
+    # Privileged nécessaire pour monter certains volumes systemes si besoin,
+    # mais pour une sauvegarde de volumes Docker simple, user root suffit souvent.
+    # On reste standard.
+    environment:
+      - TZ=${TZ}
+      - KOPIA_PASSWORD=${BACKUP_ENCRYPTION_PASS}
+      - KOPIA_SERVER_USERNAME=${BACKUP_UI_USER:-admin}
+      - KOPIA_SERVER_PASSWORD=${BACKUP_UI_PASS}
+    command:
+      - server
+      - start
+      - --insecure
+      - --address=0.0.0.0:51515
+      - --server-username=${BACKUP_UI_USER:-admin}
+      - --server-password=${BACKUP_UI_PASS}
+      - --override-hostname=jellyserv
+      - --without-password # Auth gérée par les args ci-dessus ou via UI init
+    volumes:
+      - kopia_config:/app/config
+      - kopia_cache:/app/cache
+      # Montage des volumes à sauvegarder en lecture seule
+      - ${DATA_ROOT}:/data/jellyserv_data:ro
+      - ./core:/data/jellyserv_core_config:ro
+      - ./apps:/data/jellyserv_apps_config:ro
+    ports:
+      - "51515:51515"
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backup.rule=Host(`backup.${DOMAIN}`)"
+      - "traefik.http.routers.backup.entrypoints=websecure"
+      - "traefik.http.routers.backup.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backup.middlewares=authentik@file" # Ultra sécurisé
+      - "traefik.http.services.backup.loadbalancer.server.port=51515"
+    restart: unless-stopped
+
+networks:
+  web:
+    name: jellyserv_web
+    external: true
+
+volumes:
+  kopia_config:
+  kopia_cache:

@@ -1,0 +1,32 @@
+name: jellyserv-observability
+
+services:
+  # ---------------------------------------------------------------------------
+  # WATCHTOWER - Mises à jour automatiques
+  # ---------------------------------------------------------------------------
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    environment:
+      - TZ=${TZ}
+      - WATCHTOWER_SCHEDULE=0 0 4 * * * # Tous les jours à 4h du matin
+      - WATCHTOWER_CLEANUP=true # Supprimer les vieilles images
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      # Notifications (Exemple pour Discord via Apprise ou natif si supporté)
+      # - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      # - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    # Par sécurité, Watchtower ne se met pas à jour lui-même sauf si explicitement demandé
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+    # NOTE: Pour exclure un conteneur critique (ex: DB) des updates auto, 
+    # ajoutez le label "com.centurylinklabs.watchtower.enable=false" 
+    # dans son compose.yaml respectif.
+
+networks:
+  default:
+    name: jellyserv_web
+    external: true

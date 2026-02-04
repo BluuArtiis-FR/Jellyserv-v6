@@ -1,0 +1,27 @@
+name: jellyserv-dashboard
+
+services:
+  # ---------------------------------------------------------------------------
+  # HOMER - Dashboard d'accueil
+  # ---------------------------------------------------------------------------
+  homer:
+    image: b4bz/homer
+    container_name: homer
+    environment:
+      - INIT_ASSETS=0 # Ne pas écraser la config si elle existe (on la génère nous-même)
+    volumes:
+      - ./assets:/www/assets
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.home.rule=Host(`${DOMAIN}`)" # Racine du domaine
+      - "traefik.http.routers.home.entrypoints=websecure"
+      - "traefik.http.routers.home.tls.certresolver=letsencrypt"
+      - "traefik.http.services.home.loadbalancer.server.port=8080"
+    restart: unless-stopped
+
+networks:
+  web:
+    name: jellyserv_web
+    external: true
