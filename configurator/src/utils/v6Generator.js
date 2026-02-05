@@ -306,69 +306,69 @@ networks:
 };
 
 const getServiceIcon = (serviceKey) => {
-    const map = {
-        'jellyfin': 'fas fa-play',
-        'sonarr': 'fas fa-tv',
-        'radarr': 'fas fa-film',
-        'prowlarr': 'fas fa-search',
-        'qbittorrent': 'fas fa-download',
-        'open-webui': 'fas fa-brain',
-        'kopia': 'fas fa-save',
-        'portainer': 'fas fa-box',
-        'grafana': 'fas fa-chart-line',
-        'traefik': 'fas fa-network-wired'
-    };
-    return map[serviceKey] || 'fas fa-cube';
+  const map = {
+    'jellyfin': 'fas fa-play',
+    'sonarr': 'fas fa-tv',
+    'radarr': 'fas fa-film',
+    'prowlarr': 'fas fa-search',
+    'qbittorrent': 'fas fa-download',
+    'open-webui': 'fas fa-brain',
+    'kopia': 'fas fa-save',
+    'portainer': 'fas fa-box',
+    'grafana': 'fas fa-chart-line',
+    'traefik': 'fas fa-network-wired'
+  };
+  return map[serviceKey] || 'fas fa-cube';
 };
 
 const generateHomerConfig = (selectedServices, domain) => {
-    let items = [];
-    
-    items.push({
-        name: "Authentik",
-        logo: "assets/tools/authentik.png",
-        subtitle: "Identity Provider",
-        tag: "Core",
-        url: `https://auth.${domain}`,
-        icon: "fas fa-shield-alt"
-    });
-    items.push({
-        name: "Traefik",
-        logo: "assets/tools/traefik.png",
-        subtitle: "Edge Router",
-        tag: "Core",
-        url: `https://traefik.${domain}`,
-        icon: "fas fa-network-wired"
-    });
+  let items = [];
 
-    selectedServices.forEach(sKey => {
-        const service = SERVICE_MANIFEST[sKey];
-        if(service && service.expose && !service.internal) {
-            items.push({
-                name: service.name,
-                subtitle: service.description,
-                tag: service.group,
-                url: `https://${service.subdomain || sKey}.${domain}`,
-                icon: getServiceIcon(sKey)
-            });
-        }
-    });
+  items.push({
+    name: "Authentik",
+    logo: "assets/tools/authentik.png",
+    subtitle: "Identity Provider",
+    tag: "Core",
+    url: `https://auth.${domain}`,
+    icon: "fas fa-shield-alt"
+  });
+  items.push({
+    name: "Traefik",
+    logo: "assets/tools/traefik.png",
+    subtitle: "Edge Router",
+    tag: "Core",
+    url: `https://traefik.${domain}`,
+    icon: "fas fa-network-wired"
+  });
 
-    if (selectedServices.has('kopia')) {
-         items.push({ name: "Backup", subtitle: "Kopia UI", tag: "Admin", url: `https://backup.${domain}`, icon: "fas fa-save" });
+  selectedServices.forEach(sKey => {
+    const service = SERVICE_MANIFEST[sKey];
+    if (service && service.expose && !service.internal) {
+      items.push({
+        name: service.name,
+        subtitle: service.description,
+        tag: service.group,
+        url: `https://${service.subdomain || sKey}.${domain}`,
+        icon: getServiceIcon(sKey)
+      });
     }
-    if (selectedServices.has('open-webui')) {
-         items.push({ name: "JellyAI", subtitle: "Open WebUI", tag: "AI", url: `https://ai.${domain}`, icon: "fas fa-brain" });
-    }
+  });
 
-    const groups = {};
-    items.forEach(item => {
-        const groupName = item.tag || "Services";
-        if (!groups[groupName]) groups[groupName] = [];
-        groups[groupName].push(item);
-    });
+  if (selectedServices.has('kopia')) {
+    items.push({ name: "Backup", subtitle: "Kopia UI", tag: "Admin", url: `https://backup.${domain}`, icon: "fas fa-save" });
+  }
+  if (selectedServices.has('open-webui')) {
+    items.push({ name: "JellyAI", subtitle: "Open WebUI", tag: "AI", url: `https://ai.${domain}`, icon: "fas fa-brain" });
+  }
 
-    let yaml = `title: "Jellyserv Dashboard"
+  const groups = {};
+  items.forEach(item => {
+    const groupName = item.tag || "Services";
+    if (!groups[groupName]) groups[groupName] = [];
+    groups[groupName].push(item);
+  });
+
+  let yaml = `title: "Jellyserv Dashboard"
 subtitle: "Homelab v6"
 logo: "logo.png"
 header: true
@@ -377,14 +377,14 @@ footer: '<p>Powered by <a href="https://github.com/BluuArtiis-FR/Jellyserv2026">
 services:
 `;
 
-    Object.keys(groups).forEach(groupName => {
-        yaml += `  - name: "${groupName}"\n    icon: "fas fa-code-branch"\n    items:\n`;
-        groups[groupName].forEach(item => {
-            yaml += `      - name: "${item.name}"\n        logo: "${item.icon}"\n        subtitle: "${item.subtitle}"\n        tag: "${item.tag}"\n        url: "${item.url}"\n`;
-        });
+  Object.keys(groups).forEach(groupName => {
+    yaml += `  - name: "${groupName}"\n    icon: "fas fa-code-branch"\n    items:\n`;
+    groups[groupName].forEach(item => {
+      yaml += `      - name: "${item.name}"\n        logo: "${item.icon}"\n        subtitle: "${item.subtitle}"\n        tag: "${item.tag}"\n        url: "${item.url}"\n`;
     });
+  });
 
-    return yaml;
+  return yaml;
 };
 
 export const generateV6Package = async (selectedServices, configValues) => {
@@ -395,15 +395,15 @@ export const generateV6Package = async (selectedServices, configValues) => {
   zip.file('core/config/dynamic.yml', TEMPLATES['core/config/dynamic.yml']);
 
   let includes = "";
-  
+
   const hasMedia = Array.from(selectedServices).some(s => ['jellyfin', 'plex', 'emby'].includes(s));
   const hasAI = Array.from(selectedServices).some(s => ['ollama', 'open-webui'].includes(s));
-  
+
   zip.file('apps/dashboard/compose.yaml', TEMPLATES['apps/dashboard/compose.yaml']);
   includes += `  - path: apps/dashboard/compose.yaml
     env_file: .env
     project_directory: .\n`;
-  
+
   const homerConfig = generateHomerConfig(selectedServices, configValues.DOMAIN);
   zip.file('apps/dashboard/assets/config.yml', homerConfig);
 
@@ -430,7 +430,7 @@ export const generateV6Package = async (selectedServices, configValues) => {
     env_file: .env
     project_directory: .\n`;
   }
-  
+
   const rootCompose = TEMPLATE_ROOT.replace('__INCLUDES__', includes);
   zip.file('docker-compose.yml', rootCompose);
 
@@ -441,7 +441,7 @@ export const generateV6Package = async (selectedServices, configValues) => {
   envContent += `BACKUP_UI_PASS=${configValues.BACKUP_UI_PASS || 'admin'}\n`;
   envContent += `MEDIA_ROOT=${configValues.MEDIA_PATH || './media'}\n`;
   envContent += `DATA_ROOT=${configValues.DATA_PATH || './data'}\n`;
-  
+
   zip.file('.env', envContent);
 
   return zip;
