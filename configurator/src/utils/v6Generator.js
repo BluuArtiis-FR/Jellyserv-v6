@@ -1,9 +1,5 @@
 import JSZip from 'jszip';
-import { SERVICE_MANIFEST } from '../services'; // Import service manifest to get details for dashboard
-
-// ============================================================================
-// TEMPLATES YAML (Extended for Phase 2)
-// ============================================================================
+import { SERVICE_MANIFEST } from '../services';
 
 const TEMPLATE_ROOT = `name: jellyserv
 
@@ -35,7 +31,6 @@ volumes:
 `;
 
 const TEMPLATES = {
-  // ... CORE
   'core/compose.yaml': `name: jellyserv-core
 services:
   socket-proxy:
@@ -165,7 +160,6 @@ networks:
         authResponseHeaders:
           - X-authentik-username`,
 
-  // APPS
   'apps/media/compose.yaml': `name: jellyserv-media
 services:
   jellyfin:
@@ -233,7 +227,6 @@ networks:
     name: jellyserv_ai
     external: true`,
 
-  // NEW MODULES
   'apps/backup/compose.yaml': `name: jellyserv-backup
 services:
   kopia:
@@ -313,67 +306,61 @@ networks:
 };
 
 const getServiceIcon = (serviceKey) => {
-  // Basic mapping, could be extended
-  const map = {
-    'jellyfin': 'fas fa-play',
-    'sonarr': 'fas fa-tv',
-    'radarr': 'fas fa-film',
-    'prowlarr': 'fas fa-search',
-    'qbittorrent': 'fas fa-download',
-    'open-webui': 'fas fa-brain',
-    'kopia': 'fas fa-save',
-    'portainer': 'fas fa-box',
-    'grafana': 'fas fa-chart-line',
-    'traefik': 'fas fa-network-wired'
-  };
-  return map[serviceKey] || 'fas fa-cube';
+    const map = {
+        'jellyfin': 'fas fa-play',
+        'sonarr': 'fas fa-tv',
+        'radarr': 'fas fa-film',
+        'prowlarr': 'fas fa-search',
+        'qbittorrent': 'fas fa-download',
+        'open-webui': 'fas fa-brain',
+        'kopia': 'fas fa-save',
+        'portainer': 'fas fa-box',
+        'grafana': 'fas fa-chart-line',
+        'traefik': 'fas fa-network-wired'
+    };
+    return map[serviceKey] || 'fas fa-cube';
 };
 
 const generateHomerConfig = (selectedServices, domain) => {
-  let items = [];
+    let items = [];
+    
+    items.push({
+        name: "Authentik",
+        logo: "assets/tools/authentik.png",
+        subtitle: "Identity Provider",
+        tag: "Core",
+        url: `https://auth.${domain}`,
+        icon: "fas fa-shield-alt"
+    });
+    items.push({
+        name: "Traefik",
+        logo: "assets/tools/traefik.png",
+        subtitle: "Edge Router",
+        tag: "Core",
+        url: `https://traefik.${domain}`,
+        icon: "fas fa-network-wired"
+    });
 
-  // Core Services (Always there)
-  items.push({
-    name: "Authentik",
-    logo: "assets/tools/authentik.png",
-    subtitle: "Identity Provider",
-    tag: "Core",
-    url: `https://auth.\${domain}`,
-    icon: "fas fa-shield-alt"
-  });
-  items.push({
-    name: "Traefik",
-    logo: "assets/tools/traefik.png",
-    subtitle: "Edge Router",
-    tag: "Core",
-    url: `https://traefik.\${domain}`,
-    icon: "fas fa-network-wired"
-  });
-
-  // Dynamic Services
-  selectedServices.forEach(sKey => {
-    const service = SERVICE_MANIFEST[sKey];
-    if (service && service.expose && !service.internal) {
-      items.push({
-        name: service.name,
-        // logo: \`assets/tools/\${sKey}.png\`, // TODO: Add assets folder
-        subtitle: service.description,
-        tag: service.group,
-        url: \`https://\${service.subdomain || sKey}.\${domain}\`,
+    selectedServices.forEach(sKey => {
+        const service = SERVICE_MANIFEST[sKey];
+        if(service && service.expose && !service.internal) {
+            items.push({
+                name: service.name,
+                subtitle: service.description,
+                tag: service.group,
+                url: `https://${service.subdomain || sKey}.${domain}`,
                 icon: getServiceIcon(sKey)
             });
         }
     });
 
-    // Add new modules manual entries if selected (since they might not be in legacy map yet)
     if (selectedServices.has('kopia')) {
-         items.push({ name: "Backup", subtitle: "Kopia UI", tag: "Admin", url: \`https://backup.\${domain}\`, icon: "fas fa-save" });
+         items.push({ name: "Backup", subtitle: "Kopia UI", tag: "Admin", url: `https://backup.${domain}`, icon: "fas fa-save" });
     }
     if (selectedServices.has('open-webui')) {
-         items.push({ name: "JellyAI", subtitle: "Open WebUI", tag: "AI", url: \`https://ai.\${domain}\`, icon: "fas fa-brain" });
+         items.push({ name: "JellyAI", subtitle: "Open WebUI", tag: "AI", url: `https://ai.${domain}`, icon: "fas fa-brain" });
     }
 
-    // Group by Tag
     const groups = {};
     items.forEach(item => {
         const groupName = item.tag || "Services";
@@ -381,19 +368,19 @@ const generateHomerConfig = (selectedServices, domain) => {
         groups[groupName].push(item);
     });
 
-    let yaml = \`title: "Jellyserv Dashboard"
+    let yaml = `title: "Jellyserv Dashboard"
 subtitle: "Homelab v6"
 logo: "logo.png"
 header: true
 footer: '<p>Powered by <a href="https://github.com/BluuArtiis-FR/Jellyserv2026">Jellyserv v6</a></p>'
 
 services:
-\`;
+`;
 
     Object.keys(groups).forEach(groupName => {
-        yaml += \`  - name: "\${groupName}"\\n    icon: "fas fa-code-branch"\\n    items:\\n\`;
+        yaml += `  - name: "${groupName}"\n    icon: "fas fa-code-branch"\n    items:\n`;
         groups[groupName].forEach(item => {
-            yaml += \`      - name: "\${item.name}"\\n        logo: "\${item.icon}"\\n        subtitle: "\${item.subtitle}"\\n        tag: "\${item.tag}"\\n        url: "\${item.url}"\\n\`;
+            yaml += `      - name: "${item.name}"\n        logo: "${item.icon}"\n        subtitle: "${item.subtitle}"\n        tag: "${item.tag}"\n        url: "${item.url}"\n`;
         });
     });
 
@@ -403,68 +390,57 @@ services:
 export const generateV6Package = async (selectedServices, configValues) => {
   const zip = new JSZip();
 
-  // 1. ADD STATIC MODULES
   zip.file('core/compose.yaml', TEMPLATES['core/compose.yaml']);
   zip.file('core/authentik/compose.yaml', TEMPLATES['core/authentik/compose.yaml']);
   zip.file('core/config/dynamic.yml', TEMPLATES['core/config/dynamic.yml']);
 
-  // 2. DYNAMICALLY ADD SELECTED MODULES & NEW FEATURES
   let includes = "";
   
   const hasMedia = Array.from(selectedServices).some(s => ['jellyfin', 'plex', 'emby'].includes(s));
   const hasAI = Array.from(selectedServices).some(s => ['ollama', 'open-webui'].includes(s));
   
-  // Dashboard is ALWAYS included in v6
   zip.file('apps/dashboard/compose.yaml', TEMPLATES['apps/dashboard/compose.yaml']);
-  includes += \`  - path: apps/dashboard/compose.yaml
+  includes += `  - path: apps/dashboard/compose.yaml
     env_file: .env
-    project_directory: .\\n\`;
+    project_directory: .\n`;
   
-  // Generate Homer Config
   const homerConfig = generateHomerConfig(selectedServices, configValues.DOMAIN);
   zip.file('apps/dashboard/assets/config.yml', homerConfig);
 
-  // Backup Module (Proposed feature, assumed always available or toggleable)
-  // For now let's add it if user selects 'kopia' (we need to add kopia to manifest later, or just auto-include)
-  // Let's assume we include it by default for "Premium" experience
-  // Assuming 'kopia' service key exists or strictly adding it
   zip.file('apps/backup/compose.yaml', TEMPLATES['apps/backup/compose.yaml']);
-  includes += \`  - path: apps/backup/compose.yaml
+  includes += `  - path: apps/backup/compose.yaml
     env_file: .env
-    project_directory: .\\n\`;
+    project_directory: .\n`;
 
-  // Observability
   zip.file('apps/observability/compose.yaml', TEMPLATES['apps/observability/compose.yaml']);
-  includes += \`  - path: apps/observability/compose.yaml
+  includes += `  - path: apps/observability/compose.yaml
     env_file: .env
-    project_directory: .\\n\`;
+    project_directory: .\n`;
 
   if (hasMedia) {
     zip.file('apps/media/compose.yaml', TEMPLATES['apps/media/compose.yaml']);
-    includes += \`  - path: apps/media/compose.yaml
+    includes += `  - path: apps/media/compose.yaml
     env_file: .env
-    project_directory: .\\n\`;
+    project_directory: .\n`;
   }
 
   if (hasAI) {
     zip.file('apps/ai/compose.yaml', TEMPLATES['apps/ai/compose.yaml']);
-    includes += \`  - path: apps/ai/compose.yaml
+    includes += `  - path: apps/ai/compose.yaml
     env_file: .env
-    project_directory: .\\n\`;
+    project_directory: .\n`;
   }
   
-  // Update Root Compose
   const rootCompose = TEMPLATE_ROOT.replace('__INCLUDES__', includes);
   zip.file('docker-compose.yml', rootCompose);
 
-  // 3. GENERATE ENV FILE
-  let envContent = \`# JELLYSERV v6 ENV\\nDOMAIN=\${configValues.DOMAIN}\\nACME_EMAIL=\${configValues.ACME_EMAIL}\\n\`;
-  envContent += \`AUTHENTIK_SECRET_KEY=\${configValues.AUTHENTIK_SECRET_KEY || 'generate_me'}\\n\`;
-  envContent += \`AUTHENTIK_PG_PASS=\${configValues.AUTHENTIK_PG_PASS || 'secret'}\\n\`;
-  envContent += \`BACKUP_ENCRYPTION_PASS=\${configValues.BACKUP_ENCRYPTION_PASS || 'change_me_fast'}\\n\`;
-  envContent += \`BACKUP_UI_PASS=\${configValues.BACKUP_UI_PASS || 'admin'}\\n\`;
-  envContent += \`MEDIA_ROOT=\${configValues.MEDIA_PATH || './media'}\\n\`;
-  envContent += \`DATA_ROOT=\${configValues.DATA_PATH || './data'}\\n\`;
+  let envContent = `# JELLYSERV v6 ENV\nDOMAIN=${configValues.DOMAIN}\nACME_EMAIL=${configValues.ACME_EMAIL}\n`;
+  envContent += `AUTHENTIK_SECRET_KEY=${configValues.AUTHENTIK_SECRET_KEY || 'generate_me'}\n`;
+  envContent += `AUTHENTIK_PG_PASS=${configValues.AUTHENTIK_PG_PASS || 'secret'}\n`;
+  envContent += `BACKUP_ENCRYPTION_PASS=${configValues.BACKUP_ENCRYPTION_PASS || 'change_me_fast'}\n`;
+  envContent += `BACKUP_UI_PASS=${configValues.BACKUP_UI_PASS || 'admin'}\n`;
+  envContent += `MEDIA_ROOT=${configValues.MEDIA_PATH || './media'}\n`;
+  envContent += `DATA_ROOT=${configValues.DATA_PATH || './data'}\n`;
   
   zip.file('.env', envContent);
 
